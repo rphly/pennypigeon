@@ -179,9 +179,10 @@ def handle_message(update: Update, context: CallbackContext):
 def handle_username(update: Update, context: CallbackContext):
     username = update.message.text.replace("@", "")
     print("handling username: " + username)
-    if username and is_known_user(username):
+    if username:
         context.user_data["receiver"] = username
-    elif not is_known_user(username):
+
+    if not is_known_user(username):
         updater.bot.send_message(
             chat_id=context.user_data["chat_id"],
             text=Constants.FRIEND_NOT_FOUND.format(username))
