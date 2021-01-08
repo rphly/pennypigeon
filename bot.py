@@ -217,15 +217,18 @@ def handle_location_read(update: Update, context: CallbackContext):
     messages = db.child("users").child(context.user_data["user"]).child(
         "inbox").get().val()
 
+    num_unread = len(list(filter(lambda message: message["unread"] and within(
+        message["location"], [messages[key] for key in messages]))))
+
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text="""You have {} messages hidden at this location.""".format(
+            len(num_unread))
+    )
+
     for key in messages:
         message = messages[key]
         if message["unread"] and within(message["location"], location):
-            updater.bot.send_message(
-                chat_id=context.user_data["chat_id"],
-                text="""You have {} messages hidden at this location.""".format(
-                    len(messages)),
-            )
-
             action = random.choice(Constants.RANDOM_ACTIONS)
             sender = "@" + \
                 message["sender"] if message["mode"] == Mode.NORMAL else "Someone"
@@ -250,7 +253,7 @@ def handle_location_read(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
-@send_typing_action
+@ send_typing_action
 def handle_mode(update: Update, context: CallbackContext):
 
     query = update.callback_query
@@ -275,7 +278,7 @@ def handle_mode(update: Update, context: CallbackContext):
     return LOCATION
 
 
-@send_typing_action
+@ send_typing_action
 def handle_location(update: Update, context: CallbackContext):
 
     context.user_data["location"] = {
@@ -292,7 +295,7 @@ def handle_location(update: Update, context: CallbackContext):
     return IMAGE
 
 
-@send_typing_action
+@ send_typing_action
 def handle_image(update: Update, context: CallbackContext):
 
     fileid = update.message.photo[-1].file_id
@@ -308,7 +311,7 @@ def handle_image(update: Update, context: CallbackContext):
     return MESSAGE
 
 
-@send_typing_action
+@ send_typing_action
 def skip_image(update: Update, context: CallbackContext):
 
     update.message.reply_text("Okay so just a message yeah?")
@@ -319,7 +322,7 @@ def skip_image(update: Update, context: CallbackContext):
     return MESSAGE
 
 
-@send_typing_action
+@ send_typing_action
 def handle_message(update: Update, context: CallbackContext):
 
     context.user_data["message"] = update.message.text
@@ -331,7 +334,7 @@ def handle_message(update: Update, context: CallbackContext):
     return USERNAME
 
 
-@send_typing_action
+@ send_typing_action
 def handle_username(update: Update, context: CallbackContext):
     username = update.message.text.replace("@", "")
     print("handling username: " + username)
@@ -351,7 +354,7 @@ def handle_username(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
-@send_typing_action
+@ send_typing_action
 def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext):
     print("doing firebase stuff")
     # do firebase stuff
