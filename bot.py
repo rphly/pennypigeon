@@ -1,6 +1,8 @@
 from enum import Enum
 from uuid import uuid4
+import random
 import re
+import json
 from telegram import (
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
@@ -53,6 +55,7 @@ class Mode():
 
 
 MODE, LOCATION, IMAGE, MESSAGE, USERNAME = range(5)
+READ_LOCATION = 0
 
 
 def start(update: Update, context: CallbackContext):
@@ -69,17 +72,38 @@ def start(update: Update, context: CallbackContext):
         db.child("users").child(user).set({
             "chat_id": chat_id,
             "user_id": user_id
-        })  # initialize inbox
+        })
     else:
         # known
         db.child("users").child(user).update({
             "chat_id": chat_id,
             "user_id": user_id
         })
-    # TODO: check for existing unread messages in inbox
 
     # continue
     update.message.reply_text(Constants.INTRODUCTION)
+
+
+def check_unread(update: Update, context: CallbackContext):
+    user = update.message.from_user["username"]
+    user_id = update.message.from_user["id"]
+    chat_id = update.message.chat_id
+    context.user_data["user"] = user
+    context.user_data["chat_id"] = chat_id
+
+    unread_messages = db.child("users").child(context.user_data["user"]).child(
+        "inbox").order_by_child("unread").equal_to(True).get().val()
+
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text="""You have {} unread messages.""".format(len(unread_messages)))
+
+    for key in unread_messages:
+        message = unread_messages[key]
+        alert = get_formatted_alert(message)
+        updater.bot.send_message(
+            chat_id=context.user_data["chat_id"],
+            text=alert,)
 
 
 def send(update: Update, context: CallbackContext):
@@ -100,6 +124,72 @@ def send(update: Update, context: CallbackContext):
     update.message.reply_text(Constants.SELECT_MODE,
                               reply_markup=reply_markup)
     return MODE
+
+
+def read(update: Update, context: CallbackContext):
+    user = update.message.from_user["username"]
+    user_id = update.message.from_user["id"]
+    chat_id = update.message.chat_id
+    context.user_data["user"] = user
+    context.user_data["chat_id"] = chat_id
+
+    location_keyboard = KeyboardButton(
+        text="Send Location", request_location=True)
+
+    reply_markup = ReplyKeyboardMarkup(
+        [[location_keyboard]], one_time_keyboard=True)
+
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text=Constants.SEND_LOCATION,
+        reply_markup=reply_markup)
+
+    return READ_LOCATION
+
+
+def handle_location_read(update: Update, context: CallbackContext):
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text="Got it... scanning the area...",
+        reply_markup=ReplyKeyboardRemove(
+            remove_keyboard=True
+        )
+    )
+
+    location = {
+        "lat": round(update.message.location["latitude"], 4),
+        "long": round(update.message.location["longitude"], 4)
+    }
+
+    messages = db.child("users").child(context.user_data["user"]).child(
+        "inbox").get().val()
+
+    messages = list(filter(lambda message: message["unread"] and message["location"] == location, [
+                    messages[key] for key in messages]))
+
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text="""You have {} messages hidden at this location.""".format(len(messages)))
+
+    for message in messages:
+        action = random.choice(Constants.RANDOM_ACTIONS)
+        print(action)
+        sender = "@" + \
+            message["sender"] if message["mode"] == Mode.NORMAL else "Someone"
+
+        text = f"""{action}\n\n{message["message"]}\n\n-- From {sender}"""
+
+        if "image" in message:
+            updater.bot.send_photo(
+                chat_id=context.user_data["chat_id"],
+                photo=message["image"],
+                caption=text)
+        else:
+            updater.bot.send_message(
+                chat_id=context.user_data["chat_id"],
+                text=text)
+
+    return ConversationHandler.END
 
 
 def handle_mode(update: Update, context: CallbackContext):
@@ -129,8 +219,8 @@ def handle_mode(update: Update, context: CallbackContext):
 def handle_location(update: Update, context: CallbackContext):
 
     context.user_data["location"] = {
-        "lat": update.message.location["latitude"],
-        "long": update.message.location["longitude"]
+        "lat": round(update.message.location["latitude"], 4),
+        "long": round(update.message.location["longitude"], 4)
     }
     update.message.reply_text(Constants.RECEIVED_LOCATION,
                               reply_markup=ReplyKeyboardRemove(
@@ -207,44 +297,30 @@ def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext
         "location": data["location"],
         "unread": True,
         "sender": data["user"],
-        "image_url": None
+        "image": data.get("image", None),
+        "mode": data["mode"]
     }
-
-    if "image" in data:
-        # store the image
-        f = updater.bot.get_file(data["image"])
-        im = f.download_as_bytearray()
-        # im = Image.open(BytesIO(im_array))
-        # output = BytesIO()
-        # output.name = 'image.jpgg'
-        # im.save(output, 'JPEG')
-        # output.seek(0)
-        filename = f"{data['image']}.jpg"
-        loc = f"{receiver_username}/{filename}"
-        storage.child(loc).put(im)
-
-        # get url and add to base_message
-        file_url = storage.child(loc).get_url(token=TOKEN)
-        base_message["image_url"] = file_url
 
     db.child("users").child(receiver_username).child(
         "inbox").push(base_message)  # append to inbox
 
-    print(base_message)
     # try trigger message to user
-
     receiver = db.child("users").child(receiver_username).get().val()
     if receiver and receiver["user_id"]:
-        location = data["location"]
-        alert = Constants.ANONYMOUS_ALERT.format(
-            location["lat"], location["long"]) if data["mode"] == Mode.ANONYMOUS else Constants.NORMAL_ALERT.format(data["user"], location["lat"], location["long"])
-
+        alert = get_formatted_alert(base_message)
         updater.bot.send_message(
             chat_id=receiver["user_id"], text=alert)
 
     # done
     updater.bot.send_message(
         chat_id=context.user_data["chat_id"], text=Constants.DONE.format(context.user_data["receiver"]))
+
+
+def get_formatted_alert(data):
+    location = data["location"]
+    alert = Constants.ANONYMOUS_ALERT.format(
+        location["lat"], location["long"]) if data["mode"] == Mode.ANONYMOUS else Constants.NORMAL_ALERT.format(data["sender"], location["lat"], location["long"])
+    return alert
 
 
 def is_known_user(username):
@@ -264,8 +340,20 @@ def main():
     print("starting bot")
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(CommandHandler('show_unread', check_unread))
 
-    # Add conversation handler with the states GENDER, PHOTO, LOCATION and BIO
+    read_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('uncover', read)],
+        states={
+            READ_LOCATION: [
+                MessageHandler(Filters.location, handle_location_read)
+            ]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+
+    dispatcher.add_handler(read_conv_handler)
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('send', send)],
         states={
@@ -283,14 +371,14 @@ def main():
 
     dispatcher.add_handler(conv_handler)
     # start webhook
-    # updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
-    # updater.start_webhook(listen="0.0.0.0",
-    #                      port=PORT,
-    #                      url_path=TOKEN)
-    # updater.idle()
-    print("up")
-    updater.start_polling()
-    print("Polling...")
+    updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
+    updater.start_webhook(listen="0.0.0.0",
+                          port=PORT,
+                          url_path=TOKEN)
+    updater.idle()
+    # print("up")
+    # updater.start_polling()
+    # print("Polling...")
 
 
 main()

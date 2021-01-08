@@ -41,3 +41,12 @@ class Constants:
     # ALERT
     NORMAL_ALERT = """@{} has just left you a message at http://maps.google.com/?q={},{} ! Travel there to read it :)"""
     ANONYMOUS_ALERT = """Someone has just left you a message at http://maps.google.com/?q={},{} ! Travel there to read it :)"""
+
+    RANDOM_ACTIONS = [
+        "You turn over a rock and you find this....\n\n",
+        "You look into a tree trunk...! You found something: \n\n",
+        "A pigeon plants this letter at your feet... \n\n",
+        "You look up and a package gently falls into your lap... \n\n",
+        "Etched on a stone, you see... \n\n",
+        "You find a letter floating in the wind... \n\n"
+    ]
