@@ -1,6 +1,7 @@
+from enum import Enum
 from uuid import uuid4
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Filters, KeyboardButton
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, CallbackContext
 from consts import Constants
 import logging
 import os
@@ -11,31 +12,48 @@ PORT = int(os.getenv('PORT', '8443'))
 updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
 
+class Mode(Enum):
+    ANONYMOUS = "ANONYMOUS_MODE"
+    NORMAL = "NORMAL_MODE"
+
 
 def start(update: Update, context: CallbackContext):
     keyboard = [
         [
-            InlineKeyboardButton("Normal", callback_data='1'),
-            InlineKeyboardButton("Anonymous", callback_data='2')
+            InlineKeyboardButton("Normal", callback_data=Mode.NORMAL),
+            InlineKeyboardButton("Anonymous", callback_data=Mode.ANONYMOUS)
         ]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-
     update.message.reply_text(Constants.INTRODUCTION, reply_markup=reply_markup)
 
-def button(update: Update, context: CallbackContext) -> None:
+def select_mode(update: Update, context: CallbackContext):
     query = update.callback_query
-
-    # CallbackQueries need to be answered, even if no notification to the user is needed
-    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     query.answer()
+    context.user_data["mode"] = query.data
+    query.edit_message_text(text= Constants.ANONYMOUS_MODE if query.data == Mode.ANONYMOUS else Constants.NORMAL_MODE)
+    update.message.reply_text(Constants.SEND_LOCATION)
+    
+    keyboard = [
+        [
+            KeyboardButton("Send Location", request_location=True),
 
-    query.edit_message_text(text=f"Selected option: {query.data}")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+def handle_location(update: Update, context: CallbackContext):
+    print(update.message.location)
+    context.user_data["location"] = update.message.location
+    update.message.reply_text(str(context.user_data))
+    
 
 # add handlers
 dispatcher.add_handler(CommandHandler('start', start))
-updater.dispatcher.add_handler(CallbackQueryHandler(button))
+updater.dispatcher.add_handler(CallbackQueryHandler(select_mode))
+dispatcher.add_handler(MessageHandler(Filters.location, handle_location))
+
 
 # start webhook
 updater.start_webhook(listen="0.0.0.0",
