@@ -10,6 +10,7 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
+    ChatAction
 )
 from telegram.ext import (
     Updater,
@@ -28,6 +29,7 @@ import os
 import sys
 from dotenv import load_dotenv
 import time
+from functools import wraps
 
 load_dotenv()
 
@@ -61,6 +63,19 @@ READ_LOCATION = 0
 ONBOARD_LOCATION = 0
 
 
+def send_typing_action(func):
+    """Sends typing action while processing func command."""
+
+    @wraps(func)
+    def command_func(update, context, *args, **kwargs):
+        context.bot.send_chat_action(
+            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+        return func(update, context,  *args, **kwargs)
+
+    return command_func
+
+
+@send_typing_action
 def start(update: Update, context: CallbackContext):
 
     # save user context
@@ -97,6 +112,7 @@ def start(update: Update, context: CallbackContext):
     return ONBOARD_LOCATION
 
 
+@send_typing_action
 def handle_location_onboard(update: Update, context: CallbackContext):
     updater.bot.send_message(
         chat_id=context.user_data["chat_id"],
@@ -117,6 +133,7 @@ def handle_location_onboard(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
+@send_typing_action
 def check_unread(update: Update, context: CallbackContext):
     user = update.message.from_user["username"]
     user_id = update.message.from_user["id"]
@@ -139,6 +156,7 @@ def check_unread(update: Update, context: CallbackContext):
             text=alert,)
 
 
+@send_typing_action
 def send(update: Update, context: CallbackContext):
     user = update.message.from_user["username"]
     user_id = update.message.from_user["id"]
@@ -159,6 +177,7 @@ def send(update: Update, context: CallbackContext):
     return MODE
 
 
+@send_typing_action
 def read(update: Update, context: CallbackContext):
     user = update.message.from_user["username"]
     user_id = update.message.from_user["id"]
@@ -180,6 +199,7 @@ def read(update: Update, context: CallbackContext):
     return READ_LOCATION
 
 
+@send_typing_action
 def handle_location_read(update: Update, context: CallbackContext):
     updater.bot.send_message(
         chat_id=context.user_data["chat_id"],
@@ -230,6 +250,7 @@ def handle_location_read(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
+@send_typing_action
 def handle_mode(update: Update, context: CallbackContext):
 
     query = update.callback_query
@@ -254,6 +275,7 @@ def handle_mode(update: Update, context: CallbackContext):
     return LOCATION
 
 
+@send_typing_action
 def handle_location(update: Update, context: CallbackContext):
 
     context.user_data["location"] = {
@@ -270,6 +292,7 @@ def handle_location(update: Update, context: CallbackContext):
     return IMAGE
 
 
+@send_typing_action
 def handle_image(update: Update, context: CallbackContext):
 
     fileid = update.message.photo[-1].file_id
@@ -285,6 +308,7 @@ def handle_image(update: Update, context: CallbackContext):
     return MESSAGE
 
 
+@send_typing_action
 def skip_image(update: Update, context: CallbackContext):
 
     update.message.reply_text("Okay so just a message yeah?")
@@ -295,6 +319,7 @@ def skip_image(update: Update, context: CallbackContext):
     return MESSAGE
 
 
+@send_typing_action
 def handle_message(update: Update, context: CallbackContext):
 
     context.user_data["message"] = update.message.text
@@ -306,6 +331,7 @@ def handle_message(update: Update, context: CallbackContext):
     return USERNAME
 
 
+@send_typing_action
 def handle_username(update: Update, context: CallbackContext):
     username = update.message.text.replace("@", "")
     print("handling username: " + username)
@@ -325,6 +351,7 @@ def handle_username(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
+@send_typing_action
 def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext):
     print("doing firebase stuff")
     # do firebase stuff
@@ -338,6 +365,9 @@ def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext
         "image": data.get("image", None),
         "mode": data["mode"]
     }
+
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"], text="Doing some final checks...")
 
     db.child("users").child(receiver_username).child(
         "inbox").push(base_message)  # append to inbox
