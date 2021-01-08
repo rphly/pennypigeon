@@ -1,10 +1,8 @@
 class Constants:
-    INTRODUCTION = """
-    Hi there! I'm Captain Capsule, I help users like you store messages in locations for your friends, family and loved ones to uncover!
-
-    If you've received a message, simply travel to the coordinates and share your location with us to read it!
+    INTRODUCTION = """Hi there! I'm Captain Capsule, I help users like you store messages in locations for your friends, family and loved ones to uncover!\nIf you've received a message, simply travel to the coordinates and share your location with us to read it!
 
     If you'd like to leave a note, use the command /send and /cancel to exit whenever. 
+    You can list all unread messages with /show_unread and uncover hidden messages at a location with /uncover.
     
     Enjoy the outdoors :)
     """
