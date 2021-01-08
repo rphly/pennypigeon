@@ -12,7 +12,7 @@ PORT = int(os.getenv('PORT', '8443'))
 updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
 
-class Mode(Enum):
+class Mode():
     ANONYMOUS = "ANONYMOUS_MODE"
     NORMAL = "NORMAL_MODE"
 
