@@ -342,7 +342,7 @@ def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext
 
     # try trigger message to user
     receiver = db.child("users").child(receiver_username).get().val()
-    if receiver and receiver["user_id"]:
+    if receiver and "user_id" in receiver and receiver["user_id"]:
         alert = get_formatted_alert(base_message)
         updater.bot.send_message(
             chat_id=receiver["user_id"], text=alert)
