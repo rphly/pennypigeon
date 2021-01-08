@@ -39,5 +39,5 @@ class Constants:
     TELEGRAM_USERNAME_REGEX = '^@[a-z0-9\_]{5,32}$'
 
     # ALERT
-    NORMAL_ALERT = """@{} has just left you a message at lat/long coordinates: {}, {} ! Travel there to read it :)"""
-    ANONYMOUS_ALERT = """Someone has just left you a message at lat/long coordinates: {}, {} ! Travel there to read it :)"""
+    NORMAL_ALERT = """@{} has just left you a message at http://maps.google.com/?q={},{} ! Travel there to read it :)"""
+    ANONYMOUS_ALERT = """Someone has just left you a message at http://maps.google.com/?q={},{} ! Travel there to read it :)"""

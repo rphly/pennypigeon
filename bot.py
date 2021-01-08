@@ -160,8 +160,7 @@ def handle_image(update: Update, context: CallbackContext):
 def skip_image(update: Update, context: CallbackContext):
 
     update.message.reply_text("Okay so just a message yeah?")
-    updater.bot.send_message(
-        chat_id=context.user_data["chat_id"], text="Okay so just a message yeah?")
+
     updater.bot.send_message(
         chat_id=context.user_data["chat_id"],
         text=Constants.SEND_MESSAGE)
@@ -238,7 +237,7 @@ def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext
     if receiver and receiver["user_id"]:
         location = data["location"]
         alert = Constants.ANONYMOUS_ALERT.format(
-            location["lat"], location["long"]) if data["mode"] == Mode.ANONYMOUS else Constants.NORMAL_ALERT.format(data["receiver"], location["lat"], location["long"])
+            location["lat"], location["long"]) if data["mode"] == Mode.ANONYMOUS else Constants.NORMAL_ALERT.format(data["user"], location["lat"], location["long"])
 
         updater.bot.send_message(
             chat_id=receiver["user_id"], text=alert)
@@ -284,14 +283,14 @@ def main():
 
     dispatcher.add_handler(conv_handler)
     # start webhook
+    # updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
     # updater.start_webhook(listen="0.0.0.0",
     #                      port=PORT,
     #                      url_path=TOKEN)
+    # updater.idle()
     print("up")
-    #updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
     updater.start_polling()
     print("Polling...")
-    updater.idle()
 
 
 main()
