@@ -161,34 +161,39 @@ def handle_location_read(update: Update, context: CallbackContext):
         "lat": update.message.location["latitude"],
         "long": update.message.location["longitude"],
     }
-    print(location)
 
     messages = db.child("users").child(context.user_data["user"]).child(
         "inbox").get().val()
 
-    messages = list(filter(lambda message: message["unread"] and within(message["location"], location), [
-                    messages[key] for key in messages]))
-
-    updater.bot.send_message(
-        chat_id=context.user_data["chat_id"],
-        text="""You have {} messages hidden at this location.""".format(len(messages)))
-
-    for message in messages:
-        action = random.choice(Constants.RANDOM_ACTIONS)
-        sender = "@" + \
-            message["sender"] if message["mode"] == Mode.NORMAL else "Someone"
-
-        text = f"""{action}\n\n{message["message"]}\n\n-- From {sender}"""
-
-        if "image" in message:
-            updater.bot.send_photo(
-                chat_id=context.user_data["chat_id"],
-                photo=message["image"],
-                caption=text)
-        else:
+    for key in messages:
+        message = messages[key]
+        if message["unread"] and within(message["location"], location):
             updater.bot.send_message(
                 chat_id=context.user_data["chat_id"],
-                text=text)
+                text="""You have {} messages hidden at this location.""".format(
+                    len(messages)),
+            )
+
+            action = random.choice(Constants.RANDOM_ACTIONS)
+            sender = "@" + \
+                message["sender"] if message["mode"] == Mode.NORMAL else "Someone"
+
+            text = f"""{action}\n\n{message["message"]}\n\n-- From {sender}"""
+
+            if "image" in message:
+                updater.bot.send_photo(
+                    chat_id=context.user_data["chat_id"],
+                    photo=message["image"],
+                    caption=text)
+            else:
+                updater.bot.send_message(
+                    chat_id=context.user_data["chat_id"],
+                    text=text)
+
+            # mark as read
+            db.child("users").child(context.user_data["user"]).child("inbox").child(key).update({
+                "unread": False
+            })
 
     return ConversationHandler.END
 
@@ -383,7 +388,7 @@ def main():
                           port=PORT,
                           url_path=TOKEN)
     updater.idle()
-    print("up")
+    # print("up")
     # updater.start_polling()
     # print("Polling...")
 
