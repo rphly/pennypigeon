@@ -66,13 +66,16 @@ def start(update: Update, context: CallbackContext):
 
     # check if exists
     if not is_known_user(user):
-        print("creating user")
         db.child("users").child(user).set({
-            "inbox": None,
             "chat_id": chat_id,
             "user_id": user_id
         })  # initialize inbox
-
+    else:
+        # known
+        db.child("users").child(user).update({
+            "chat_id": chat_id,
+            "user_id": user_id
+        })
     # TODO: check for existing unread messages in inbox
 
     # continue
@@ -232,7 +235,7 @@ def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext
     # try trigger message to user
 
     receiver = db.child("users").child(receiver_username).get().val()
-    if receiver:
+    if receiver and receiver["user_id"]:
         location = data["location"]
         alert = Constants.ANONYMOUS_ALERT.format(
             location["lat"], location["long"]) if data["mode"] == Mode.ANONYMOUS else Constants.NORMAL_ALERT.format(data["receiver"], location["lat"], location["long"])
@@ -281,13 +284,13 @@ def main():
 
     dispatcher.add_handler(conv_handler)
     # start webhook
-    updater.start_webhook(listen="0.0.0.0",
-                          port=PORT,
-                          url_path=TOKEN)
+    # updater.start_webhook(listen="0.0.0.0",
+    #                      port=PORT,
+    #                      url_path=TOKEN)
     print("up")
-    updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
-    # updater.start_polling()
-    # print("Polling...")
+    #updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
+    updater.start_polling()
+    print("Polling...")
     updater.idle()
 
 
