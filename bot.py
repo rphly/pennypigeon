@@ -424,14 +424,14 @@ def main():
 
     dispatcher.add_handler(conv_handler)
     # start webhook
-    updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
-    updater.start_webhook(listen="0.0.0.0",
-                          port=PORT,
-                          url_path=TOKEN)
-    updater.idle()
+    # updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
+    # updater.start_webhook(listen="0.0.0.0",
+    #                       port=PORT,
+    #                       url_path=TOKEN)
+    # updater.idle()
     print("up")
-    # updater.start_polling()
-    # print("Polling...")
+    updater.start_polling()
+    print("Polling...")
 
 
 main()
