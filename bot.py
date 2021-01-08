@@ -20,6 +20,7 @@ from telegram.ext import (
     CallbackContext,
     CallbackQueryHandler
 )
+import geopy.distance
 import pyrebase
 from consts import Constants
 import logging
@@ -157,14 +158,15 @@ def handle_location_read(update: Update, context: CallbackContext):
     )
 
     location = {
-        "lat": round(update.message.location["latitude"], 4),
-        "long": round(update.message.location["longitude"], 4)
+        "lat": update.message.location["latitude"],
+        "long": update.message.location["longitude"],
     }
+    print(location)
 
     messages = db.child("users").child(context.user_data["user"]).child(
         "inbox").get().val()
 
-    messages = list(filter(lambda message: message["unread"] and message["location"] == location, [
+    messages = list(filter(lambda message: message["unread"] and within(message["location"], location), [
                     messages[key] for key in messages]))
 
     updater.bot.send_message(
@@ -173,7 +175,6 @@ def handle_location_read(update: Update, context: CallbackContext):
 
     for message in messages:
         action = random.choice(Constants.RANDOM_ACTIONS)
-        print(action)
         sender = "@" + \
             message["sender"] if message["mode"] == Mode.NORMAL else "Someone"
 
@@ -219,8 +220,8 @@ def handle_mode(update: Update, context: CallbackContext):
 def handle_location(update: Update, context: CallbackContext):
 
     context.user_data["location"] = {
-        "lat": round(update.message.location["latitude"], 4),
-        "long": round(update.message.location["longitude"], 4)
+        "lat": update.message.location["latitude"],
+        "long": update.message.location["longitude"]
     }
     update.message.reply_text(Constants.RECEIVED_LOCATION,
                               reply_markup=ReplyKeyboardRemove(
@@ -316,6 +317,12 @@ def save_to_db_and_trigger_send_message(update: Update, context: CallbackContext
         chat_id=context.user_data["chat_id"], text=Constants.DONE.format(context.user_data["receiver"]))
 
 
+def within(location1, location2):
+    coords1 = (location1["lat"], location1["long"])
+    coords2 = (location2["lat"], location2["long"])
+    return geopy.distance.distance(coords1, coords2).meters < 20
+
+
 def get_formatted_alert(data):
     location = data["location"]
     alert = Constants.ANONYMOUS_ALERT.format(
@@ -376,7 +383,7 @@ def main():
                           port=PORT,
                           url_path=TOKEN)
     updater.idle()
-    # print("up")
+    print("up")
     # updater.start_polling()
     # print("Polling...")
 
