@@ -13,6 +13,9 @@ updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
 
 
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text(text=Constants.INTRODUCTION)
+
 def start(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=Constants.INTRODUCTION)
 
