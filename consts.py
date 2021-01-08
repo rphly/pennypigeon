@@ -48,3 +48,6 @@ class Constants:
         "Etched on a stone, you see... \n\n",
         "You find a letter floating in the wind... \n\n"
     ]
+
+    # ONBOARDING
+    ONBOARDING = """Someone has left you a message... send your location to open it!"""

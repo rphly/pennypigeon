@@ -27,6 +27,7 @@ import logging
 import os
 import sys
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -57,6 +58,7 @@ class Mode():
 
 MODE, LOCATION, IMAGE, MESSAGE, USERNAME = range(5)
 READ_LOCATION = 0
+ONBOARD_LOCATION = 0
 
 
 def start(update: Update, context: CallbackContext):
@@ -81,8 +83,36 @@ def start(update: Update, context: CallbackContext):
             "user_id": user_id
         })
 
-    # continue
-    update.message.reply_text(Constants.INTRODUCTION)
+    location_keyboard = KeyboardButton(
+        text="Send Location", request_location=True)
+
+    reply_markup = ReplyKeyboardMarkup(
+        [[location_keyboard]], one_time_keyboard=True)
+
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text=Constants.ONBOARDING,
+        reply_markup=reply_markup)
+
+    return ONBOARD_LOCATION
+
+
+def handle_location_onboard(update: Update, context: CallbackContext):
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text="Got it... Opening the message...",
+        reply_markup=ReplyKeyboardRemove(
+            remove_keyboard=True
+        )
+    )
+    time.sleep(1)
+
+    updater.bot.send_message(
+        chat_id=context.user_data["chat_id"],
+        text=Constants.INTRODUCTION,
+    )
+
+    return ConversationHandler.END
 
 
 def check_unread(update: Update, context: CallbackContext):
@@ -351,8 +381,19 @@ def cancel(update: Update, context: CallbackContext):
 def main():
     print("starting bot")
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('show_unread', check_unread))
+
+    onboarding_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            ONBOARD_LOCATION: [
+                MessageHandler(Filters.location, handle_location_onboard)
+            ],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+
+    dispatcher.add_handler(onboarding_handler)
 
     read_conv_handler = ConversationHandler(
         entry_points=[CommandHandler('uncover', read)],
@@ -388,7 +429,7 @@ def main():
                           port=PORT,
                           url_path=TOKEN)
     updater.idle()
-    # print("up")
+    print("up")
     # updater.start_polling()
     # print("Polling...")
 
