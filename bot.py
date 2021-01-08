@@ -1,7 +1,6 @@
 from uuid import uuid4
-from telegram import InlineQueryResultArticle, ParseMode, InputTextMessageContent, Update
-from telegram.ext import Updater, InlineQueryHandler, CommandHandler, CallbackContext, MessageHandler, Filters
-from telegram.utils.helpers import escape_markdown
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext
 from consts import Constants
 import logging
 import os
@@ -13,42 +12,30 @@ updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
 
 
-def start(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text(text=Constants.INTRODUCTION)
-
-def inlinequery(update: Update, context: CallbackContext) -> None:
-    """Handle the inline query."""
-    query = update.inline_query.query
-    results = [
-        InlineQueryResultArticle(
-            id=uuid4(), title="Caps", input_message_content=InputTextMessageContent(query.upper())
-        ),
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title="Bold",
-            input_message_content=InputTextMessageContent(
-                f"*{escape_markdown(query)}*", parse_mode=ParseMode.MARKDOWN
-            ),
-        ),
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title="Italic",
-            input_message_content=InputTextMessageContent(
-                f"_{escape_markdown(query)}_", parse_mode=ParseMode.MARKDOWN
-            ),
-        ),
+def start(update: Update, context: CallbackContext):
+    keyboard = [
+        [
+            InlineKeyboardButton("Normal", callback_data='1'),
+            InlineKeyboardButton("Anonymous", callback_data='2')
+        ]
     ]
 
-    update.inline_query.answer(results)
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
+    update.message.reply_text(Constants.INTRODUCTION, reply_markup=reply_markup)
 
-# define handlers
-start_handler = CommandHandler('start', start)
-inline_handler = InlineQueryHandler(inlinequery)
+def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    query.answer()
+
+    query.edit_message_text(text=f"Selected option: {query.data}")
 
 # add handlers
-dispatcher.add_handler(start_handler)
-dispatcher.add_handler(inline_handler)
+dispatcher.add_handler(CommandHandler('start', start))
+updater.dispatcher.add_handler(CallbackQueryHandler(button))
 
 # start webhook
 updater.start_webhook(listen="0.0.0.0",
