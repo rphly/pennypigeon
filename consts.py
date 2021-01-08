@@ -4,11 +4,11 @@ class Constants:
     To leave a note, use the command /send and /cancel to exit whenever. 
     You can also list all unread messages with /show_unread and uncover messages others have left for you at different locations with /uncover.\n
     
-    start - start the bot\n
-    send - leave a message somewhere!\n
-    uncover - read all messages at a location\n
-    show_unread - show all unread messages\n
-    cancel - exit the process
+    /start - start the bot\n
+    /send - leave a message somewhere!\n
+    /uncover - read all messages at a location\n
+    /show_unread - show all unread messages\n
+    /cancel - exit the process
     """
 
     # Select Mode
