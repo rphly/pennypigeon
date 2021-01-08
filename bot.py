@@ -1,7 +1,7 @@
 from enum import Enum
 from uuid import uuid4
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Filters, KeyboardButton
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, CallbackContext
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, KeyboardButton
+from telegram.ext import Filters, Updater, CommandHandler, MessageHandler, CallbackQueryHandler, CallbackContext
 from consts import Constants
 import logging
 import os
