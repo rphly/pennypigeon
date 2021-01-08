@@ -29,7 +29,7 @@ class Constants:
 
     # FRIEND NOT KNOWN TO BOT
     FRIEND_NOT_FOUND = """It seems like your friend @{} hasn't registered with us. Forward the following message to him so he can start receiving messages left in his inbox!"""
-    INVITE_FRIEND = """Hey there! Someone's left you a message on @captain_capsule_bot. In order to receive it, you gotta start a chat with: t.me/captain_capsule_bot"""
+    INVITE_FRIEND = """Hey there! Someone's left you a message on @pennypigeon_bot. In order to receive it, you gotta start a chat with: t.me/pennypigeon_bot"""
 
     # DONE
     DONE = """Done, message saved for @{} at location!"""
