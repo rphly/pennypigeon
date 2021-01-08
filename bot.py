@@ -112,6 +112,8 @@ def handle_location_onboard(update: Update, context: CallbackContext):
         text=Constants.INTRODUCTION,
     )
 
+    check_unread(update, context)
+
     return ConversationHandler.END
 
 
