@@ -258,6 +258,7 @@ def cancel(update: Update, context: CallbackContext):
 
 
 def main():
+    print("starting bot")
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', start))
 
@@ -282,6 +283,7 @@ def main():
     updater.start_webhook(listen="0.0.0.0",
                           port=PORT,
                           url_path=TOKEN)
+    print("up")
     updater.bot.set_webhook("https://captain-capsule.herokuapp.com/" + TOKEN)
     # updater.start_polling()
     # print("Polling...")
